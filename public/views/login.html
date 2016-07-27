@@ -1,14 +1,15 @@
-<form action="/login" method="post">
+<form>
   <div>
     <label for="username">Username:</label>
-    <input type="text" name="username" id="username" />
+    <input type="text" name="username" id="username" ng-model="main.username"/>
   </div>
   <div>
     <label for="password">Password:</label>
-    <input type="text" name="password" id="password" />
+    <input type="password" name="password" id="password" ng-model="main.password"/>
   </div>
   <div>
-    <input type="submit" value="Log In" />
-    <a href="/register">Register</a>
+    <input type="submit" ng-click="main.login()" value="Log In" />
+    <!-- <a href="/register">Register</a> -->
+    <button ng-click="main.register()" />Register</button>
   </div>
 </form>

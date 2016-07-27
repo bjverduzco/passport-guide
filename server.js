@@ -51,27 +51,31 @@ MongoDB.once('open', function(){
 
 //Passport
 passport.use('local', new localStrategy({
-  User.findOne({username: username}, function(err, user){
-    if(err){
-      throw err;
-    };
-    if(!user) {
-      return done(null, false {message: 'Incorrect username and password.'});
-    }
-
-    //test a matching password
-    user.comparePassword(password, function(err, isMatch){
+  passReqToCallback: true,
+  usernameField: 'username'
+},
+  function(req, username, password, done){
+    User.findOne({username: username}, function(err, user){
       if(err){
         throw err;
+      };
+      if(!user) {
+        return done(null, false, {message: 'Incorrect username and password.'});
       }
-      if(isMatch){
-        return done(null, user);
-      }
-      else{
-        done(null,false, {message: 'Incorrect username and password.'});
-      }
+
+      //test a matching password
+      user.comparePassword(password, function(err, isMatch){
+        if(err){
+          throw err;
+        }
+        if(isMatch){
+          return done(null, user);
+        }
+        else{
+          done(null,false, {message: 'Incorrect username and password.'});
+        }
+      });
     });
-  });
 }
 
 
