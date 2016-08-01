@@ -1,5 +1,4 @@
 var express = require('express');
-var mongoose = require('mongoose');
 var bodyParser = require('body-parser');
 var passport = require('passport');
 var session = require('express-session');
@@ -33,76 +32,29 @@ app.use('/register', register);
 app.use('/login', login);
 
 app.get('/', function(req, res, next){
-  res.json(req.isAuthenticated());
-});
-
-//MongoDB
-var mongoURI = 'mongodb://localhost:27017/prime_example_passport';
-var MongoDB = mongoose.connect(mongoURI).connection;
-
-MongoDB.on('error', function(err){
-  console.log('mongodb conneciton error', err);
-});
-
-MongoDB.once('open', function(){
-  console.log('mongodb connection open');
+  res.sendFile(path.resolve(__dirname, '../public/views/login.html'));
 });
 
 
 //Passport
-passport.use('local', new localStrategy({
-  passReqToCallback: true,
-  usernameField: 'username'
-},
-  function(req, username, password, done){
-    User.findOne({username: username}, function(err, user){
-      if(err){
-        throw err;
-      };
-      if(!user) {
-        return done(null, false, {message: 'Incorrect username and password.'});
+passport.use('local', new LocalStrategy({
+  usernameField: 'username',
+  passwordField: 'password'
+}, function(username, password, done) {
+  User.findAndComparePassword(username, password, function(err, isMatch, user){
+      if (err) {
+        return done(err);
       }
 
-      //test a matching password
-      user.comparePassword(password, function(err, isMatch){
-        if(err){
-          throw err;
-        }
-        if(isMatch){
-          return done(null, user);
-        }
-        else{
-          done(null,false, {message: 'Incorrect username and password.'});
-        }
-      });
-    });
-}
+      if (isMatch) {
+        // successfully auth the user
+        return done(null, user);
+      } else {
+        done(null, false);
+      }
+  });
+}));
 
-
-//somehow i managed to type most of this twice
-
-  // function(req, username, password, done){
-  //   //our implementaion will go here
-  // }
-  // User.findOne({username: username}, function(err, user){
-  //   if(err){
-  //     throw err;
-  //   }
-  //   else{
-  //     if(!user){
-  //       return done(null, false);
-  //     }
-  //     user.comparePassword(password, function(err, isMatch){
-  //       if(isMatch){
-  //         return done(null, user);
-  //       }
-  //       else{
-  //         done(null, false);
-  //       }
-  //     });
-  //   };
-  // });
-));
 
 passport.serializeUser(function(user, done){
   done(null, user.id);

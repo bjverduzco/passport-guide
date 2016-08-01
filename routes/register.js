@@ -4,8 +4,11 @@ var passport = require('passport');
 var path = require('path');
 var Users = require('../models/user');
 
+//posts the username and password to be registered
 router.post('/', function(req, res, next){
-  console.log(req.body);
+  // console.log(req.body);
+
+  //creates the username and password based on the input fields
   Users.create(req.body, function(err, post){
     if(err){
       console.log('errror creating user', err);

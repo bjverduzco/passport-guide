@@ -6,8 +6,10 @@
     <script src="vendor/angular/angular.min.js"></script>
     <script src="vendor/angular-route/angular-route.min.js" charset="utf-8"></script>
     <script src="scripts/app.js"></script>
+    <!-- this is used to redirect with $location -->
     <base href="/" />
   </head>
+  <!--using a main as MainController and ng view to properly dispaly the correct content  -->
   <body ng-controller="MainController as main">
     <h1>Passport Guide</h1>
     <div ng-view>

@@ -1,47 +1,105 @@
-var mongoose  = require('mongoose');
-var Schema = mongoose.Schema;
+var pg = require('pg');
 var bcrypt = require('bcrypt');
 var SALT_WORK_FACTOR = 10;
 
-var UserSchema = new Schema({
-  username: { type: String, required: true, index: {unique: true}},
-  password: { type: String, required: true}
-});
+var config = {
+  database = 'passport',
+  port = 5432,
+  max: 10,
+  idleTimeoutMillis: 30000
+}
 
-UserSchema.pre('save', function(next){
-  var user = this;
+var pool = new pg.Pool(config);
 
-  if(!user.isModified('password')){
-    return next();
-  };
+function findByUsername(username, callback) {
 
-  bcrypt.hash(user.password, SALT_WORK_FACTOR, function(err, hash){
-    if(err){
-      console.log(err);
+  pool.connect(function(err, client, done){
+    if (err) {
+      done();
+      return callback(err);
     }
-    else{
-      console.log('Hashed Password', hash);
-      user.password = hash;
-      return next();
-    }
+
+    client.query('SELECT * FROM users WHERE username=$1;', [username], function(err, result){
+      if (err) {
+        done();
+        return callback(err);
+      }
+
+      callback(null, result.rows[0]);
+      done();
+    });
   });
-});
+}
 
-UserSchema.methods.comparePassword = function(candidatePassword, callback){
-  var user = this;
+function create(username, password, callback) {
 
-  bcrypt.compare(candidatePassword, user.password, function(err, isMatch){
-    if(err){
-      console.log(err);
-      callback(err, isMatch);
-    }
-    else{
-    console.log('isMatch', isMatch)
-    callback(null, isMatch);
-    }
+  bcrypt.hash(password, SALT_WORK_FACTOR, function(err, hash){
+    pool.connect(function(err, client, done){
+      if (err) {
+        done();
+        return callback(err);
+      }
+
+      client.query('INSERT INTO users (username, password) '
+      +'VALUES ($1, $2) RETURNING id, username;',
+      [username, hash],
+      function(err, result){
+
+
+        if (err) {
+          done();
+          return callback(err);
+        }
+
+        callback(null, result.rows[0]);
+        done();
+      });
+    });
   });
-  //isMatch is replacing the bottom statement
-  // callback(null, this.password == candidatePassword);
+}
+
+function findAndComparePassword(username, candidatePassword, callback) {
+    // candidatePassword is what we received on the request
+
+    findByUsername(username, function(err, user) {
+      if (err) {
+        return callback(err);
+      }
+
+      bcrypt.compare(candidatePassword, user.password, function(err, isMatch){
+        if(err){
+          console.log(err);
+          callback(err);
+        } else {
+          console.log('isMatch', isMatch);
+          callback(null, isMatch, user);
+        };
+      });
+    });
+}
+
+function findById(id, callback) {
+  pool.connect(function(err, client, done){
+    if (err) {
+      done();
+      return callback(err);
+    }
+
+    client.query('SELECT * FROM users WHERE id=$1;', [id], function(err, result){
+      if (err) {
+        done();
+        return callback(err);
+      }
+
+      callback(null, result.rows[0]);
+      done();
+    });
+  });
+}
+
+module.exports = {
+  findByUsername: findByUsername,
+  findById: findById,
+  create: create,
+  findAndComparePassword: findAndComparePassword
 };
-
-module.exports = mongoose.model('User', UserSchema);
